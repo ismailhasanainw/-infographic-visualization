@@ -1,5 +1,3 @@
-pip install streamlit
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,8 +7,7 @@ from sklearn.preprocessing import LabelEncoder
 # Membaca dataset
 @st.cache
 def load_data():
-    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00222/bank.csv"
-    data = pd.read_csv(url, sep=";")
+    data = pd.read_csv('bank.csv', sep=";")
     return data
 
 # Memuat dataset
@@ -72,5 +69,3 @@ fig4, ax4 = plt.subplots(figsize=(10,6))
 sns.countplot(x='job', hue='y', data=df, ax=ax4)
 ax4.set_title('Jenis Pekerjaan vs Berlangganan Deposito')
 st.pyplot(fig4)
-
-streamlit run app.py
