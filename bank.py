@@ -5,7 +5,7 @@ import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
 
 # Membaca dataset
-@st.cache
+@st.cache_data
 def load_data():
     data = pd.read_csv('bank.csv', sep=";")
     return data
