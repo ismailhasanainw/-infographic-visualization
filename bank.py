@@ -1,71 +1,87 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 
-# Membaca dataset
+# Load dataset
 @st.cache_data
 def load_data():
-    data = pd.read_csv('bank.csv', sep=";")
-    return data
+    df = pd.read_csv('bank.csv', sep=";")
+    return df
 
-# Memuat dataset
 df = load_data()
 
-# Encoder untuk kolom kategorikal
-le = LabelEncoder()
+# Display basic info and first rows
+st.title("Interactive Bank Marketing Dataset Exploration")
+st.write("Dataset ini berisi data kampanye pemasaran telepon oleh bank Portugis.")
+st.write("Kami akan mengeksplorasi bagaimana variabel-variabel dalam dataset ini mempengaruhi hasil pemasaran.")
 
-# Kolom kategorikal yang perlu di-encode
-cat_columns = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'poutcome', 'y']
-for col in cat_columns:
-    df[col] = le.fit_transform(df[col])
+# Display first few rows
+st.subheader("First few rows of the dataset")
+st.dataframe(df.head())
 
-# Judul aplikasi
-st.title("Dashboard Interaktif untuk Dataset Bank Marketing")
-st.write("""
-Dataset ini berhubungan dengan kampanye pemasaran langsung yang dilakukan oleh bank Portugal. 
-Kampanye ini fokus pada panggilan telepon untuk menawarkan deposito bank. Tujuan kita adalah 
-untuk menganalisis faktor-faktor yang mempengaruhi keputusan pelanggan dalam berlangganan deposito bank.
-""")
+# Sidebar for user interaction
+st.sidebar.title("Filter Data")
 
-# Menampilkan data
-st.subheader("Data Set")
-st.write(df.head())
+# Filter by job
+job_filter = st.sidebar.multiselect("Filter by Job", df['job'].unique(), df['job'].unique())
+filtered_data = df[df['job'].isin(job_filter)]
 
-# Statistik deskriptif
-st.subheader("Statistik Deskriptif")
-st.write(df.describe())
+# Filter by marital status
+marital_filter = st.sidebar.multiselect("Filter by Marital Status", df['marital'].unique(), df['marital'].unique())
+filtered_data = filtered_data[filtered_data['marital'].isin(marital_filter)]
 
-# Filter untuk memilih kolom numerik
-st.subheader("Filter Data Berdasarkan Kolom")
-selected_column = st.selectbox("Pilih kolom untuk analisis", df.columns)
-st.write(df[selected_column].value_counts())
+# Show filtered data
+st.subheader(f"Data filtered by Job and Marital Status")
+st.dataframe(filtered_data)
 
-# Visualisasi distribusi usia
-st.subheader("Distribusi Usia")
+# Show summary statistics of numeric columns
+st.subheader("Summary Statistics of Numeric Columns")
+st.write(filtered_data.describe())
+
+# Visualizations
+
+# Histogram for age
+st.subheader("Age Distribution")
 fig, ax = plt.subplots()
-sns.histplot(df['age'], kde=True, ax=ax)
-ax.set_title('Distribusi Usia Pelanggan')
-st.pyplot(fig)
+sns.histplot(filtered_data['age'], kde=True, ax=ax)
+st.pyplot(fig=fig)  # Pass the 'fig' explicitly
 
-# Visualisasi proporsi pelanggan yang berlangganan deposito
-st.subheader("Proporsi Pelanggan yang Berlangganan Deposito")
-fig2, ax2 = plt.subplots()
-sns.countplot(x='y', data=df, ax=ax2)
-ax2.set_title('Distribusi Berlangganan Deposito')
-st.pyplot(fig2)
+# Countplot for job category
+st.subheader("Job Distribution")
+fig, ax = plt.subplots()
+sns.countplot(x='job', data=filtered_data, ax=ax)
+plt.xticks(rotation=45)
+st.pyplot(fig=fig)  # Pass the 'fig' explicitly
 
-# Visualisasi hubungan durasi dan berlangganan deposito
-st.subheader("Hubungan Durasi Kontak dan Berlangganan Deposito")
-fig3, ax3 = plt.subplots()
-sns.boxplot(x='y', y='duration', data=df, ax=ax3)
-ax3.set_title('Durasi Kontak vs Berlangganan Deposito')
-st.pyplot(fig3)
+# Scatter plot for duration vs. age, colored by target variable (y)
+st.subheader("Duration vs Age colored by Subscription Outcome")
+fig, ax = plt.subplots()
+sns.scatterplot(data=filtered_data, x='age', y='duration', hue='y', palette='coolwarm', ax=ax)
+st.pyplot(fig=fig)  # Pass the 'fig' explicitly
 
-# Visualisasi job vs target (y)
-st.subheader("Hubungan Jenis Pekerjaan dan Berlangganan Deposito")
-fig4, ax4 = plt.subplots(figsize=(10,6))
-sns.countplot(x='job', hue='y', data=df, ax=ax4)
-ax4.set_title('Jenis Pekerjaan vs Berlangganan Deposito')
-st.pyplot(fig4)
+# Pairplot for numeric features
+st.subheader("Pairplot for Numeric Features")
+sns.pairplot(filtered_data[['age', 'balance', 'duration', 'campaign', 'previous', 'pdays', 'y']], hue='y', palette='coolwarm')
+st.pyplot(fig=fig)  # Pass the 'fig' explicitly
+
+# Train a RandomForest model and show accuracy score (simple classifier for exploration)
+X = filtered_data[['age', 'balance', 'duration', 'campaign', 'previous', 'pdays']]
+y = LabelEncoder().fit_transform(filtered_data['y'])
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Train Random Forest model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+# Show accuracy
+accuracy = accuracy_score(y_test, y_pred)
+st.subheader(f"Random Forest Classifier Accuracy: {accuracy:.2f}")
+
+# Conclusion
+st.write("Dari visualisasi dan model yang disajikan, Anda dapat mengeksplorasi faktor-faktor yang mempengaruhi keputusan pelanggan untuk berlangganan deposito berjangka.")
